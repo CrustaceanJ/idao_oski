@@ -1,6 +1,6 @@
-all: build
+all: run
 	
 build:
 	echo "I can see this in the log!"
-run:
+run: build
 	bash main.sh

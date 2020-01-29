@@ -41,7 +41,7 @@ for sat_id in full_test.sat_id.unique():
     df1_test =  full_test[full_test.sat_id == sat_id]
     for col in ['x', 'y', 'z', 'Vx', 'Vy', 'Vz']:
         for i in range(24):
-            df2_train = df1_train[df1_train[col + '_num'] == i]
+            df2_train = df1_train[df1_train[col + '_sim_num'] == i]
             df2_test = df1_test[df1_test[col + '_sim_num'] == i]
             lin_model = LinearRegression()
             X_train = df2_train.reset_index()['id'].values[-width:].reshape(-1, 1)
