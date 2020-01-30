@@ -3,6 +3,8 @@ import ipyvolume.pylab as p3
 
 import numpy as np
 
+from ipywidgets import FloatSlider, ColorPicker, VBox, jslink
+
 
 class processVisualizer:
     def __init__(self, train_data, test_data):
@@ -64,7 +66,7 @@ class processVisualizer:
         """
         
         ipv.clear()
-        if train_idxs is None:
+        if train_idxs is None: 
             train_idxs = np.array(self.train_data['sat_id'].unique())
         if test_idxs is None:
             test_idxs = train_idxs
@@ -85,6 +87,17 @@ class processVisualizer:
                            color="green", color_selected='red',
                            size=train_marker_size, size_selected=test_marker_size,
                            selected=selected)
+        
+        ##  Чтобы можно было менять размеры и цвета
+        size = FloatSlider(min=1, max=15, step=0.2)
+        size_selected = FloatSlider(min=1, max=15, step=0.2)
+        color = ColorPicker()
+        color_selected = ColorPicker()
+        jslink((self.q, 'size'), (size, 'value'))
+        jslink((self.q, 'size_selected'), (size_selected, 'value'))
+        jslink((self.q, 'color'), (color, 'value'))
+        jslink((self.q, 'color_selected'), (color_selected, 'value'))
 #         ipv.style.use('seaborn-darkgrid')
-        ipv.animation_control(self.q, interval=200)
-        ipv.show()
+        ipv.animation_control(self.q, interval=75)
+        ipv.show([VBox([ipv.gcc(), size, size_selected, color, color_selected])])
+#         ipv.show()
