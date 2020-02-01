@@ -19,3 +19,7 @@
 
 Аналогично предыдущей попытке, но подобрал параметры на валидации для lgbm - lightgbm.LGBMRegressor(max_depth=3, learning_rate=0.2, n_estimators=500, random_state=13)
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
