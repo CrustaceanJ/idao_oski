@@ -11,3 +11,15 @@
 
 Придумать как это засунуть в другие модели
 
+01.02.2020 LB Score: Task 1 (78.18 Public), CV Score: Task 1 (88.09);
+
+Используется валидация из https://github.com/CrustaceanJ/idao_oski/commit/e144c8cbcdac6d20f75c5c68d165572bd32b163b. Модель lgbm со стандартными параметрами. Для каждого целевого столбца и для каждого объекта (sat_id) - своя модель. В качестве тренировочных данных используется вся информация из трейна для данного sat_id.
+
+01.02.2020 LB Score: Task 1 (78.98 Public), CV Score: Task 1 (89.49);
+
+Аналогично предыдущей попытке, но подобрал параметры на валидации для lgbm - lightgbm.LGBMRegressor(max_depth=3, learning_rate=0.2, n_estimators=500, random_state=13)
+
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
