@@ -44,7 +44,7 @@ class TransformerIDAO:
             self.train_coefs.loc[self.train_coefs.sat_id == sat_id, 'D'] = np.nanmedian(d)
         
         
-    def fit_transform(self, df, train=True, train_coefs_V=None, train_V=True):
+    def fit_transform(self, df, train=True, train_coefs_V=None):
         if train:
             test_sz = df.sat_id.nunique()
             self.train_coefs = pd.DataFrame({'sat_id': df.sat_id.unique(), 'A': np.zeros(test_sz),
@@ -97,7 +97,7 @@ class TransformerIDAO:
         if train:
             self.train_coefs['xc'] = 0.0; self.train_coefs['yc'] = 0.0
 
-        if (self.train_coefs_V is not None and train_V):
+        if (self.train_coefs_V is not None and train):
             self.train_coefs_V['xc'] = 0.0; self.train_coefs_V['yc'] = 0.0
         #shift
         for sat_id in df.sat_id.unique():
@@ -112,18 +112,18 @@ class TransformerIDAO:
                 df.loc[df.sat_id == sat_id, 'Vx_transformed'] = df[df.sat_id == sat_id].Vx_transformed.values - self.train_coefs[self.train_coefs.sat_id == sat_id].xc.values
                 df.loc[df.sat_id == sat_id, 'Vy_transformed'] = df[df.sat_id == sat_id].Vy_transformed.values - self.train_coefs[self.train_coefs.sat_id == sat_id].yc.values
             else:
-                if train_V:
+                if train:
                     self.train_coefs_V.loc[self.train_coefs_V.sat_id == sat_id, 'xc'] = (df[df.sat_id == sat_id].Vx_transformed.max() + df[df.sat_id == sat_id].Vx_transformed.min()) / 2
                     self.train_coefs_V.loc[self.train_coefs_V.sat_id == sat_id, 'yc'] = (df[df.sat_id == sat_id].Vy_transformed.max() + df[df.sat_id == sat_id].Vy_transformed.min()) / 2  
 
                 df.loc[df.sat_id == sat_id, 'Vx_transformed'] = df[df.sat_id == sat_id].Vx_transformed.values - self.train_coefs_V[self.train_coefs_V.sat_id == sat_id].xc.values
                 df.loc[df.sat_id == sat_id, 'Vy_transformed'] = df[df.sat_id == sat_id].Vy_transformed.values - self.train_coefs_V[self.train_coefs_V.sat_id == sat_id].yc.values            
-        print("ROTATE")
+
         #rotate
         if train:
             self.train_coefs['small_polyos'] = 0.0; self.train_coefs['big_polyos'] = 0.0 
 
-        if (self.train_coefs_V is not None and train_V):
+        if (self.train_coefs_V is not None and train):
             self.train_coefs_V['small_polyos'] = 0.0; self.train_coefs_V['big_polyos'] = 0.0 
 
         for sat_id in df.sat_id.unique():
@@ -149,7 +149,7 @@ class TransformerIDAO:
             df.loc[df.sat_id == sat_id, 'y_transformed'] = coord[:, 1]
 
             if self.train_coefs_V is not None:
-                if train_V:
+                if train:
                     distances = np.sqrt((df[df.sat_id == sat_id].Vx_transformed.values) ** 2 + (df[df.sat_id == sat_id].Vy_transformed.values) ** 2)
                     id_min = np.argmin(distances); id_max = np.argmax(distances)
                     self.train_coefs_V.loc[self.train_coefs_V.sat_id == sat_id, 'small_polyos'] = distances[id_min]
@@ -175,7 +175,7 @@ class TransformerIDAO:
     
     
     
-    def inv_transform(self, df, another_transform=False):
+    def inv_transform(self, df):
         
         # INVERSE TRANSFORM in 2d (inv_shift_to_center_and_rotate)
         #rotate
