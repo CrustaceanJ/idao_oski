@@ -1,6 +1,8 @@
 from sklearn.linear_model import LinearRegression
 import numpy as np
 import pandas as pd
+from sklearn.svm import SVR
+from lightgbm import LGBMRegressor
 
 
 class Model2D:
@@ -63,7 +65,7 @@ class Model2D:
                 idx_min  = (df[trans_col1].idxmin() - df[trans_col1].index[0] + self.period) % self.period
                 print(df[trans_col1].idxmin(), df[trans_col1].index[0])
                 step = 1
-                if df[trans_col2].values[idx_min] > df[trans_col2].values[idx_min + 2]:
+                if df[trans_col2].values[idx_min - 2] > df[trans_col2].values[idx_min]:
                     step *= -1
                 idx_last = ((step + self.period) * len(df_train) - step * idx_min) % self.period
                 full_train.loc[df_train.index, num_col] = np.fromfunction(lambda i: (i * step - step * idx_min + self.period * len(df)) % self.period,
@@ -91,11 +93,11 @@ class Model2D:
                     X_train = np.arange(self.WIDTH, dtype=np.float64)
                     per_train = df_train[df_train[num_col] == i]
                     per_test = df_test[df_test[num_col] == i]
-                    y_train = np.zeros(self.WIDTH, dtype=np.float64)
-                    y_train_cnt = np.zeros(self.WIDTH, dtype=np.float64)
-
+                   
                     # select the last width of observations for every sat_id
                     for col, pred_col in zip(trans_cols, pred_cols):
+                        y_train = np.zeros(self.WIDTH, dtype=np.float64)
+                        y_train_cnt = np.zeros(self.WIDTH, dtype=np.float64)
                         for j in range(-1, -self.WIDTH, -1):
                             for sat_id in per_train.sat_id.unique():
                                 sat_col_val = per_train.loc[per_train[per_train.sat_id == sat_id].index, col].values
@@ -104,6 +106,8 @@ class Model2D:
                                     y_train_cnt[j] += 1
 
                         # mean aggregation
+#                         print(f'values: {y_train}')
+#                         print(f'counts: {y_train_cnt}')
                         last_width = 0
                         for k in range(self.WIDTH):
                             if y_train_cnt[k] == 0:
@@ -119,7 +123,7 @@ class Model2D:
                         X_train = X_train[last_width:]
                         y_train = y_train[last_width:]
                         
-                        linear_reg = LinearRegression()
+                        linear_reg = SVR('poly', degree=1)
                         linear_reg.fit(X_train.reshape(-1, 1), y_train)
 
                         for sat_id in per_test.sat_id.unique():
