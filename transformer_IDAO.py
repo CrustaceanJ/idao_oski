@@ -9,8 +9,8 @@ class TransformerIDAO:
         pass
 
         
-    def __get_plane_coefs(self, df, col1, col2, col3):
-        for sat_id in self.train_coefs.sat_id:
+    def __get_plane_coefs(self, df, train_coefs, col1, col2, col3):
+        for sat_id in train_coefs.sat_id:
             df_part = df[df.sat_id == sat_id]
             n = 0; i = 0
 
@@ -38,10 +38,12 @@ class TransformerIDAO:
 
             d = -(a * p1[:, 0] + b * p1[:, 1] + c * p1[:, 2])
 
-            self.train_coefs.loc[self.train_coefs.sat_id == sat_id, 'A'] = np.nanmedian(a)
-            self.train_coefs.loc[self.train_coefs.sat_id == sat_id, 'B'] = np.nanmedian(b)
-            self.train_coefs.loc[self.train_coefs.sat_id == sat_id, 'C'] = np.nanmedian(c)
-            self.train_coefs.loc[self.train_coefs.sat_id == sat_id, 'D'] = np.nanmedian(d)
+            train_coefs.loc[self.train_coefs.sat_id == sat_id, 'A'] = np.nanmedian(a)
+            train_coefs.loc[self.train_coefs.sat_id == sat_id, 'B'] = np.nanmedian(b)
+            train_coefs.loc[self.train_coefs.sat_id == sat_id, 'C'] = np.nanmedian(c)
+            train_coefs.loc[self.train_coefs.sat_id == sat_id, 'D'] = np.nanmedian(d)
+        
+        return train_coefs
         
         
     def fit_transform(self, df, train=True, train_coefs_V=None):
@@ -49,13 +51,15 @@ class TransformerIDAO:
             test_sz = df.sat_id.nunique()
             self.train_coefs = pd.DataFrame({'sat_id': df.sat_id.unique(), 'A': np.zeros(test_sz),
                                'B': np.zeros(test_sz), 'C': np.zeros(test_sz), 'D': np.zeros(test_sz)})
-            self.__get_plane_coefs(df, 'x', 'y', 'z')
+            self.train_coefs = self.__get_plane_coefs(df, self.train_coefs, 'x', 'y', 'z')
         self.train_coefs_V = train_coefs_V
         if self.train_coefs_V is not None:
             test_sz = df.sat_id.nunique()
             self.train_coefs_V = pd.DataFrame({'sat_id': df.sat_id.unique(), 'A': np.zeros(test_sz),
                                'B': np.zeros(test_sz), 'C': np.zeros(test_sz), 'D': np.zeros(test_sz)})
-            self.__get_plane_coefs(df, 'Vx', 'Vy', 'Vz')
+            self.train_coefs_V = self.__get_plane_coefs(df, self.train_coefs_V, 'Vx', 'Vy', 'Vz')
+ 
+        
         
         df['x_transformed'] = df['x']; df['y_transformed'] = df['y']; df['z_transformed'] = df['z']
         df['Vx_transformed'] = df['Vx']; df['Vy_transformed'] = df['Vy']; df['Vz_transformed'] = df['Vz']

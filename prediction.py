@@ -33,6 +33,7 @@ class Model2D:
 
         self.WIDTH = WIDTH
         self.width = WIDTH * period
+        self.period = period
         self.all_pred_cols = self.pred_coord_cols + self.pred_vel_cols
 
 
@@ -53,20 +54,26 @@ class Model2D:
         # enumerating coords
         for sat_id in full_train.sat_id.unique():
             df_train = full_train[full_train.sat_id == sat_id]
-            
             df = df_train.iloc[-self.width:]
             if sat_id in UNIQ:
                 df_test = full_test[full_test.sat_id == sat_id]
-            for trans_col, num_col in zip([self.coord_cols[0], self.vel_cols[0]], num_cols):
-                idx_min  = df[trans_col].idxmin()
-                idx_last = (len(df_train) + idx_min) % 24
-                full_train.loc[df_train.index, num_col] = np.fromfunction(lambda i: (i + idx_min) % 24,
+            for trans_col1, trans_col2, num_col in zip([self.coord_cols[0], self.vel_cols[0]], 
+                                                       [self.coord_cols[1], self.vel_cols[1]],
+                                                       num_cols):
+                idx_min  = (df[trans_col1].idxmin() - df[trans_col1].index[0] + self.period) % self.period
+                print(df[trans_col1].idxmin(), df[trans_col1].index[0])
+                step = 1
+                if df[trans_col2].values[idx_min] > df[trans_col2].values[idx_min + 2]:
+                    step *= -1
+                idx_last = ((step + self.period) * len(df_train) - step * idx_min) % self.period
+                full_train.loc[df_train.index, num_col] = np.fromfunction(lambda i: (i * step - step * idx_min + self.period * len(df)) % self.period,
                                                                           (len(df_train), ), dtype=np.int16)
                 if sat_id in UNIQ:
-                    full_test.loc[df_test.index, num_col] = np.fromfunction(lambda i: (i + idx_last) % 24,
+                    full_test.loc[df_test.index, num_col] = np.fromfunction(lambda i: (i * step + idx_last + self.period * len(df_test)) % self.period,
                                                                             (len(df_test), ), dtype=np.int16)
 
         print('COORDS HAS ENUMERATED')
+#         return full_test, full_train
         for pred_col in self.all_pred_cols:
             full_test[pred_col] = 0.0
 
@@ -78,9 +85,9 @@ class Model2D:
                                                       num_cols):
                 df_train = full_train[full_train.cluster == cluster]
                 df_test = full_test[full_test.cluster == cluster]
-                df_train = df_train[df_train.sat_id.isin(df_test.sat_id.unique())]
+#                 df_train = df_train[df_train.sat_id.isin(df_test.sat_id.unique())]
 
-                for i in range(24):
+                for i in range(self.period):
                     X_train = np.arange(self.WIDTH, dtype=np.float64)
                     per_train = df_train[df_train[num_col] == i]
                     per_test = df_test[df_test[num_col] == i]
@@ -89,18 +96,29 @@ class Model2D:
 
                     # select the last width of observations for every sat_id
                     for col, pred_col in zip(trans_cols, pred_cols):
-                        linear_reg = LinearRegression()
                         for j in range(-1, -self.WIDTH, -1):
-                            for sat_id in per_test.sat_id.unique():
+                            for sat_id in per_train.sat_id.unique():
                                 sat_col_val = per_train.loc[per_train[per_train.sat_id == sat_id].index, col].values
                                 if abs(j) <= len(sat_col_val):
                                     y_train[j] += sat_col_val[j]
                                     y_train_cnt[j] += 1
 
                         # mean aggregation
+                        last_width = 0
+                        for k in range(self.WIDTH):
+                            if y_train_cnt[k] == 0:
+                                break
+                            else:
+                                last_width = k
+                               
+                        
                         y_train_cnt[y_train_cnt == 0] = 1
                         y_train /= y_train_cnt
-
+                        last_width = 0
+                        
+                        X_train = X_train[last_width:]
+                        y_train = y_train[last_width:]
+                        
                         linear_reg = LinearRegression()
                         linear_reg.fit(X_train.reshape(-1, 1), y_train)
 
@@ -108,4 +126,4 @@ class Model2D:
                             X_test = np.arange(len(per_test[per_test.sat_id == sat_id])) + self.WIDTH
                             y_pred = linear_reg.predict(X_test.reshape(-1, 1))
                             full_test.loc[per_test[per_test.sat_id == sat_id].index, pred_col] = y_pred
-        return full_test
+        return full_test, full_train

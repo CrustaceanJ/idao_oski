@@ -30,15 +30,15 @@ class IDAO_validator_2d_model:
             offset = 0
             train_idxs = np.zeros((X['sat_id'].nunique(), 2))
             test_idxs = np.zeros((X['sat_id'].nunique(), 2))
+            if (step + 1) / self.parts_amount > 1.0:
+                    print('WARNING: Не весь тест момещается -> пропускаем фолд')
+                    continue
             for sat_id in X['sat_id'].unique():
                 if sat_id != 0:
                     offset += len(X[X['sat_id'] == (sat_id - 1)])
                 train_idxs[sat_id, 0] = offset
                 train_idxs[sat_id, 1] = offset + int(step / self.parts_amount * X[X['sat_id'] == sat_id].shape[0])
                 
-                if (step + 1) / self.parts_amount > 1.0:
-                    print('WARNING: Не весь тест момещается -> пропускаем фолд')
-                    continue
                 
                 test_idxs[sat_id, 0] = offset + int(step / self.parts_amount * X[X['sat_id'] == sat_id].shape[0])
                 test_idxs[sat_id, 1] = offset + int((step + 1) / self.parts_amount * X[X['sat_id'] == sat_id].shape[0])
